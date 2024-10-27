@@ -1,4 +1,4 @@
-# Copyright (C) 2023 by Skyward
+# Copyright (C) 2024 by Skyward
 #
 # This program is free software; you can redistribute it and/or 
 # it under the terms of the GNU General Public License as published 
@@ -39,10 +39,16 @@ set(CMAKE_OBJCOPY      ${PREFIX}objcopy)
 set(CMAKE_OBJDUMP      ${PREFIX}objdump)
 set(CMAKE_SIZE         ${PREFIX}size)
 
-# Reset default compiler flags
-set(CMAKE_ASM_FLAGS_DEBUG   "" CACHE INTERNAL "asm debug compiler flags")
-set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "asm release compiler flags")
-set(CMAKE_C_FLAGS_DEBUG     "" CACHE INTERNAL "c debug compiler flags")
-set(CMAKE_C_FLAGS_RELEASE   "" CACHE INTERNAL "c release compiler flags")
-set(CMAKE_CXX_FLAGS_DEBUG   "" CACHE INTERNAL "cxx debug compiler flags")
-set(CMAKE_CXX_FLAGS_RELEASE "" CACHE INTERNAL "cxx release compiler flags")
+# Optimization flags for each language and build configuration
+set(CMAKE_ASM_FLAGS_DEBUG "")
+set(CMAKE_C_FLAGS_DEBUG "-Og -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g")
+set(CMAKE_ASM_FLAGS_RELEASE "")
+set(CMAKE_C_FLAGS_RELEASE "-O2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_ASM_FLAGS_RELWITHDEBINFO "")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_ASM_FLAGS_MINSIZEREL "")
+set(CMAKE_C_FLAGS_MINSIZEREL "-Os")
+set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")

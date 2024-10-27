@@ -25,10 +25,19 @@
 
 cmake_minimum_required(VERSION 3.25)
 
-project(Main C CXX ASM)
+project(Miosix
+    VERSION 2.7
+    DESCRIPTION "OS kernel designed to run on 32bit microcontrollers."
+    HOMEPAGE_URL "https://miosix.org"
+    LANGUAGES C CXX
+)
 
-add_subdirectory(miosix EXCLUDE_FROM_ALL)
-include(miosix/cmake/miosix_link_target.cmake)
+# Load in KPATH the project path
+set(KPATH ${CMAKE_CURRENT_LIST_DIR})
 
-add_executable(main main.cpp)
-miosix_link_target(main stm32f407vg_stm32f4discovery)
+# Create libraries for each board
+include(${KPATH}/cmake/boards.cmake)
+include(${KPATH}/cmake/miosix_add_board_libraries.cmake)
+foreach(BOARD_OPTIONS_FILE ${MIOSIX_BOARDS_OPTIONS_FILES})
+    miosix_add_board_libraries(${BOARD_OPTIONS_FILE})
+endforeach()

@@ -1,4 +1,4 @@
-# Copyright (C) 2023 by Skyward
+# Copyright (C) 2024 by Skyward
 #
 # This program is free software; you can redistribute it and/or 
 # it under the terms of the GNU General Public License as published 
@@ -31,17 +31,6 @@ set(ARCH_PATH ${KPATH}/arch/${ARCH_NAME}/common)
 set(BOARD_PATH ${KPATH}/arch/${ARCH_NAME}/${BOARD_NAME})
 set(BOARD_CONFIG_PATH ${KPATH}/config/arch/${ARCH_NAME}/${BOARD_NAME})
 
-# Optimization flags:
-# -O0 do no optimization, the default if no optimization level is specified
-# -O or -O1 optimize minimally
-# -O2 optimize more
-# -O3 optimize even more
-# -Ofast optimize very aggressively to the point of breaking the standard
-# -Og Optimize debugging experience, enables optimizations that do not
-# interfere with debugging
-# -Os Optimize for size with -O2 optimizations that do not increase code size
-set(OPT_OPTIMIZATION -O2)
-
 # Boot file
 set(BOOT_FILE ${BOARD_PATH}/core/stage_1_boot.cpp)
 
@@ -70,41 +59,46 @@ set(CLOCK_FREQ -DHSE_VALUE=8000000 -DSYSCLK_FREQ_168MHz=168000000)
 # set(OPT_EXCEPT -fno-exceptions -fno-rtti -D__NO_EXCEPTIONS)
 
 # Specify a custom flash command
-# This is the program that is invoked when the flash flag (-f or --flash) is
-# used with the Miosix Build System. Use $binary or $hex as placeolders, they
-# will be replaced by the build systems with the binary or hex file repectively.
-# If a command is not specified, the build system will use st-flash if found
-# set(PROGRAM_CMDLINE "here your custom flash command")
+# This is the program that is invoked when the program-<target_name> target is
+# built. Use <binary> or <hex> as placeolders, they will be replaced by the
+# build systems with the binary or hex file path repectively.
+# If a command is not specified, the build system will fallback to st-flash
+set(PROGRAM_CMDLINE qstlink2 -cqewV <binary>)
 
 # Basic flags
 set(FLAGS_BASE -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
 # Flags for ASM and linker
-set(AFLAGS_BASE ${FLAGS_BASE})
-set(LFLAGS_BASE ${FLAGS_BASE} -Wl,--gc-sections,-Map,main.map -Wl,-T${LINKER_SCRIPT} ${OPT_EXCEPT} ${OPT_OPTIMIZATION} -nostdlib)
+set(AFLAGS ${FLAGS_BASE})
+set(LFLAGS ${FLAGS_BASE} -Wl,--gc-sections,-Map,main.map -Wl,-T${LINKER_SCRIPT} ${OPT_EXCEPT} ${OPT_OPTIMIZATION} -nostdlib)
 
 # Flags for C/C++
-set(CFLAGS_BASE
-    -D_BOARD_STM32F4DISCOVERY "-D_MIOSIX_BOARDNAME=\"${BOARD_NAME}\""
-    -D_DEFAULT_SOURCE=1 -ffunction-sections -Wall -Werror=return-type -g
-    -D_ARCH_CORTEXM4_STM32F4
-    ${CLOCK_FREQ} ${XRAM} ${SRAM_BOOT} ${FLAGS_BASE} ${OPT_OPTIMIZATION} -c
+string(TOUPPER ${ARCH_NAME} ARCH_NAME_UPPER)
+set(CFLAGS
+    -D_BOARD_STM32F4DISCOVERY -D_MIOSIX_BOARDNAME="${BOARD_NAME}"
+    -D_DEFAULT_SOURCE=1 -ffunction-sections -Wall -Werror=return-type
+    -D_ARCH_${ARCH_NAME_UPPER}
+    ${CLOCK_FREQ} ${XRAM} ${SRAM_BOOT} ${FLAGS_BASE} -c
 )
-set(CXXFLAGS_BASE ${CFLAGS_BASE} ${OPT_EXCEPT})
+set(CXXFLAGS ${CFLAGS} -std=c++14 ${OPT_EXCEPT})
 
 # Select architecture specific files
 set(ARCH_SRC
-    ${ARCH_PATH}/interfaces-impl/delays.cpp
-    ${ARCH_PATH}/interfaces-impl/gpio_impl.cpp
-    ${ARCH_PATH}/interfaces-impl/portability.cpp
+    ${KPATH}/arch/common/drivers/stm32f2_f4_i2c.cpp
+    ${KPATH}/arch/common/drivers/stm32_hardware_rng.cpp
+    ${KPATH}/arch/common/drivers/servo_stm32.cpp
+    ${BOARD_PATH}/drivers/rtc.cpp
+    ${BOARD_PATH}/interfaces-impl/deep_sleep.cpp
     ${BOARD_PATH}/interfaces-impl/bsp.cpp
-    ${KPATH}/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
+
     ${KPATH}/arch/common/core/interrupts_cortexMx.cpp
     ${KPATH}/arch/common/core/mpu_cortexMx.cpp
-    ${KPATH}/arch/common/core/stm32f2_f4_l4_f7_h7_os_timer.cpp
-    ${KPATH}/arch/common/drivers/sd_stm32f2_f4_f7.cpp
     ${KPATH}/arch/common/drivers/serial_stm32.cpp
-    ${KPATH}/arch/common/drivers/servo_stm32.cpp
-    ${KPATH}/arch/common/drivers/stm32_hardware_rng.cpp
-    ${KPATH}/arch/common/drivers/stm32f2_f4_i2c.cpp
+    ${KPATH}/arch/common/drivers/dcc.cpp
+    ${ARCH_PATH}/interfaces-impl/portability.cpp
+    ${ARCH_PATH}/interfaces-impl/delays.cpp
+    ${KPATH}/arch/common/drivers/stm32_gpio.cpp
+    ${KPATH}/arch/common/drivers/sd_stm32f2_f4_f7.cpp
+    ${KPATH}/arch/common/core/stm32_32bit_os_timer.cpp
+    ${KPATH}/arch/common/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
 )
