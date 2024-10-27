@@ -78,11 +78,14 @@ set(MIOSIX_KERNEL_SRC
 )
 
 # Include the architecture options
-include(${MIOSIX_KPATH}/arch/CMakeLists.txt)
+if(DEFINED MIOSIX_OPT_BOARD)
+    include(${MIOSIX_KPATH}/arch/CMakeLists.txt)
+else()
+    message(WARNING "MIOSIX_OPT_BOARD not set")
+endif()
 
 # Verify that all the required variables have been defined, otherwise abort
 set(REQUIRED_VARIABLES
-    MIOSIX_OPT_BOARD
     MIOSIX_ARCH_INC
     MIOSIX_BOARD_INC
     MIOSIX_BOARD_SETTINGS_INC

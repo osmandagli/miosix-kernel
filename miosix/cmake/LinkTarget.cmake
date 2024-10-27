@@ -42,28 +42,31 @@ function(miosix_link_target TARGET)
     # Linker script and linking options are eredited from miosix libraries
 
     # Link libraries
-    target_link_libraries(${TARGET} PRIVATE
+    target_link_libraries(${TARGET} PUBLIC
         -Wl,--start-group miosix stdc++ c m gcc atomic -Wl,--end-group
     )
 
     # Tell the linker to produce the map file
-    target_link_options(${TARGET} PRIVATE -Wl,-Map,$<TARGET_FILE_DIR:${TARGET}>/$<TARGET_FILE_BASE_NAME:${TARGET}>.map)
+    target_link_options(${TARGET} PUBLIC -Wl,-Map,$<TARGET_FILE_DIR:${TARGET}>/$<TARGET_FILE_BASE_NAME:${TARGET}>.map)
 
-    # Add a post build command to create the hex file to flash on the board
-    add_custom_command(
-        OUTPUT ${TARGET}.hex
-        COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${TARGET}> ${TARGET}.hex
-        COMMENT "Creating ${TARGET}.hex"
-        VERBATIM
-    )
-    add_custom_target(${TARGET}_hex ALL DEPENDS ${TARGET}.hex)
-    add_custom_command(
-        OUTPUT ${TARGET}.bin
-        COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET}> ${TARGET}.bin
-        COMMENT "Creating ${TARGET}.bin"
-        VERBATIM
-    )
-    add_custom_target(${TARGET}_bin ALL DEPENDS ${TARGET}.bin)
+    get_target_property(target_type ${TARGET} TYPE)
+    if (target_type STREQUAL "EXECUTABLE")
+        # Add a post build command to create the hex file to flash on the board
+        add_custom_command(
+            OUTPUT ${TARGET}.hex
+            COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${TARGET}> ${TARGET}.hex
+            COMMENT "Creating ${TARGET}.hex"
+            VERBATIM
+        )
+        add_custom_target(${TARGET}_hex ALL DEPENDS ${TARGET}.hex)
+        add_custom_command(
+            OUTPUT ${TARGET}.bin
+            COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET}> ${TARGET}.bin
+            COMMENT "Creating ${TARGET}.bin"
+            VERBATIM
+        )
+        add_custom_target(${TARGET}_bin ALL DEPENDS ${TARGET}.bin)
+    endif ()
 
     # Generate custom build command to flash the target
     miosix_add_program_target(${TARGET})
