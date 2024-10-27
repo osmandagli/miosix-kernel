@@ -34,6 +34,9 @@ endif()
 # Automatically transform the architecture name into upper cases
 string(TOUPPER ${MIOSIX_ARCH_NAME} MIOSIX_ARCH_NAME_UPPER)
 
+# Set the path to the multilib directory for this architecture
+set(MIOSIX_MULTILIB_PATH thumb/v7e-m+dp/hard)
+
 # Select appropriate compiler flags for both C/C++/linker
 set(MIOSIX_A_FLAGS ${MIOSIX_CPU_FLAGS})
 list(APPEND MIOSIX_C_FLAGS
