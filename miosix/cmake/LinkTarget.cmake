@@ -34,20 +34,24 @@ include(AddProgramTarget)
 # - Tells the linker to generate the map file
 # - Registers custom targets to create the hex and bin files (${TARGET}_bin and ${TARGET}_hex)
 # - Registers a custom target to flash the program to the board (${TARGET}_program)
-function(miosix_link_target TARGET)
+function(miosix_link_target TARGET TYPE)
     if (NOT TARGET miosix)
         message(FATAL_ERROR "The board you selected is not supported")
+    endif()
+
+    if (NOT TYPE)
+        set(TYPE PUBLIC)
     endif()
 
     # Linker script and linking options are eredited from miosix libraries
 
     # Link libraries
-    target_link_libraries(${TARGET} PUBLIC
+    target_link_libraries(${TARGET} ${TYPE}
         -Wl,--start-group miosix stdc++ c m gcc atomic -Wl,--end-group
     )
 
     # Tell the linker to produce the map file
-    target_link_options(${TARGET} PUBLIC -Wl,-Map,$<TARGET_FILE_DIR:${TARGET}>/$<TARGET_FILE_BASE_NAME:${TARGET}>.map)
+    target_link_options(${TARGET} ${TYPE} -Wl,-Map,$<TARGET_FILE_DIR:${TARGET}>/$<TARGET_FILE_BASE_NAME:${TARGET}>.map)
 
     get_target_property(target_type ${TARGET} TYPE)
     if (target_type STREQUAL "EXECUTABLE")
