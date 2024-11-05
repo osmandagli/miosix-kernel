@@ -30,13 +30,15 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/..)
 # Tell CMake that we are building for an embedded ARM system
 set(CMAKE_SYSTEM_NAME Miosix)
 
-set(MIOSIX_PREFIX      llvm)
+set(LLVM_PREFIX      /home/streben/Documenti/llvm-project/build/bin)
+set(MIOSIX_PREFIX    ${LLVM_PREFIX}/llvm)
 
 # Names of the compiler and other tools
 set(CMAKE_ASM_COMPILER clang)
 set(CMAKE_C_COMPILER   clang)
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_AR           ${MIOSIX_PREFIX}-ar)
+set(CMAKE_OPT          ${LLVM_PREFIX}/opt)
 set(CMAKE_OBJCOPY      ${MIOSIX_PREFIX}-objcopy)
 set(CMAKE_OBJDUMP      ${MIOSIX_PREFIX}-objdump)
 set(CMAKE_SIZE         ${MIOSIX_PREFIX}-size)
