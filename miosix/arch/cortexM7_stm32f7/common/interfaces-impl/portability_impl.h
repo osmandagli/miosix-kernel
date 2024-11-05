@@ -105,6 +105,7 @@ const int stackPtrOffsetInCtxsave=0; ///< Allows to locate the stack pointer
                  "   vldmia.32 r0, {s16-s31}    \n"/*restore s16-s31 if need*/ \
                  "0: msr    psp, r1             \n"/*restore PROCESS sp*/      \
                  "   bx     lr                  \n"/*return*/                  \
+                 "   .ltorg                     \n"/*Generate relocation table*/\
                  );
 
 /**
