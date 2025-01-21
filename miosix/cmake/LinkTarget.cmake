@@ -56,22 +56,22 @@ function(miosix_link_target TARGET TYPE)
     get_target_property(target_type ${TARGET} TYPE)
     if (target_type STREQUAL "EXECUTABLE")
         # Add a post build command to create the hex file to flash on the board
-        add_custom_command(
-            OUTPUT ${TARGET}.hex
-            COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${TARGET}> ${TARGET}.hex
-            COMMENT "Creating ${TARGET}.hex"
-            VERBATIM
-        )
-        add_custom_target(${TARGET}_hex ALL DEPENDS ${TARGET}.hex)
-        add_custom_command(
-            OUTPUT ${TARGET}.bin
-            COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET}> ${TARGET}.bin
-            COMMENT "Creating ${TARGET}.bin"
-            VERBATIM
-        )
-        add_custom_target(${TARGET}_bin ALL DEPENDS ${TARGET}.bin)
+        #add_custom_command(
+        #    OUTPUT ${TARGET}.hex
+        #    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${TARGET}> ${TARGET}.hex
+        #    COMMENT "Creating ${TARGET}.hex"
+        #    VERBATIM
+        #)
+        #add_custom_target(${TARGET}_hex ALL DEPENDS ${TARGET}.hex)
+        #add_custom_command(
+        #    OUTPUT ${TARGET}.bin
+        #    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET}> ${TARGET}.bin
+        #    COMMENT "Creating ${TARGET}.bin"
+        #    VERBATIM
+        #)
+        #add_custom_target(${TARGET}_bin ALL DEPENDS ${TARGET}.bin)
     endif ()
 
     # Generate custom build command to flash the target
-    miosix_add_program_target(${TARGET})
+    # miosix_add_program_target(${TARGET})
 endfunction()
