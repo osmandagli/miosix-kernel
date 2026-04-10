@@ -70,6 +70,20 @@ function(miosix_link_target TARGET TYPE)
         #    VERBATIM
         #)
         #add_custom_target(${TARGET}_bin ALL DEPENDS ${TARGET}.bin)
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND ${CMAKE_OBJCOPY}
+                -S -O binary
+                -j .text
+                -j .rodata
+                -j .data
+                -j .bss
+                -j .ARM.extab
+                -j .ARM.exidx
+                $<TARGET_FILE:${TARGET}>
+                $<TARGET_FILE_DIR:${TARGET}>/$<TARGET_FILE_BASE_NAME:${TARGET}>.bin
+            COMMENT "Generating opitimized BIN image"
+            VERBATIM
+        )
     endif ()
 
     # Generate custom build command to flash the target
