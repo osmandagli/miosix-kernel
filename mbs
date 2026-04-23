@@ -63,6 +63,11 @@ OPTIONS:
     -u, --configure       Force configure and do not build
     -d, --debug           Enable debug
     -v, --verbose         Print a verbose output
+
+  ASPIS Hardening Options:
+    -a, --aspis           Enable ASPIS hardening (builds *_aspis targets)
+    -p PASS, --dup PASS   Data duplication pass: eddi|reddi|seddi|fdsc|no-dup (default: eddi)
+    -k PASS, --cfc PASS   Control-flow checking pass: cfcss|rasm|inter-rasm|racfed|no-cfc (default: cfcss)
 EOF
 }
 
@@ -74,7 +79,7 @@ init_dirs() {
     msb_base=$(cd -- $(dirname "$0") > /dev/null 2>&1 && pwd -P)
     source_dir="$PWD"
     build_dir="$source_dir/$BUILD_DEFAULT_DIRNAME"
-    toolchain_file="$msb_base/miosix/cmake/toolchain.cmake"
+    toolchain_file="$msb_base/miosix/cmake/Toolchains/clang.cmake"
 }
 
 find_deps() {
@@ -119,17 +124,32 @@ configure() {
 
     # Verbose output
     [ "$config_verbose" = true ] && defs+=(-DCMAKE_VERBOSE_MAKEFILE=ON)
-    
+
+    # ASPIS hardening
+    if [ "$config_aspis" = true ]; then
+        defs+=(-DMIOSIX_ENABLE_ASPIS=ON)
+        defs+=(-DMIOSIX_ASPIS_DUP="$config_dup")
+        defs+=(-DMIOSIX_ASPIS_CFC="$config_cfc")
+    else
+        defs+=(-DMIOSIX_ENABLE_ASPIS=OFF)
+    fi
+
     # CMake generator
     declare gen
     [ "$found_ninja" = true ] && gen=-GNinja || gen=-G"Unix Makefiles"
-    
+
     # Configure build
     cmake -B"$build_dir" "${defs[@]}" "$gen" "$source_dir" || return
 
     # Save configuration to avoid reconfiguring each time
     { [ "$config_debug" = true ]   && touch "$build_dir/$DEBUG_FILENAME";   } || rm -f "$build_dir/$DEBUG_FILENAME"
     { [ "$config_verbose" = true ] && touch "$build_dir/$VERBOSE_FILENAME"; } || rm -f "$build_dir/$VERBOSE_FILENAME"
+    # Save ASPIS config: file contains "dup:cfc" when enabled, deleted when disabled
+    if [ "$config_aspis" = true ]; then
+        echo "${config_dup}:${config_cfc}" > "$build_dir/$ASPIS_FILENAME"
+    else
+        rm -f "$build_dir/$ASPIS_FILENAME"
+    fi
 }
 
 check_configured() {
@@ -144,8 +164,19 @@ check_configured() {
     else
         [ -f "$build_dir/$DEBUG_FILENAME" ]   && found_debug=true   || found_debug=false
         [ -f "$build_dir/$VERBOSE_FILENAME" ] && found_verbose=true || found_verbose=false
+        # Read the saved ASPIS config file
+        if [ -f "$build_dir/$ASPIS_FILENAME" ]; then
+            found_aspis=true
+            found_aspis_cfg=$(cat "$build_dir/$ASPIS_FILENAME")
+        else
+            found_aspis=false
+            found_aspis_cfg=""
+        fi
+        declare want_aspis_cfg="${config_dup}:${config_cfc}"
         if [ "$config_debug" != "$found_debug" ] \
-        || [ "$config_verbose" != "$found_verbose" ]; then
+        || [ "$config_verbose" != "$found_verbose" ] \
+        || [ "$config_aspis" != "$found_aspis" ] \
+        || { [ "$config_aspis" = true ] && [ "$want_aspis_cfg" != "$found_aspis_cfg" ]; }; then
             to_reconfigure=true
         fi
     fi
@@ -237,6 +268,18 @@ set_jobs() {
     jobs="$1"
 }
 
+set_aspis() {
+    config_aspis=true
+}
+
+set_dup() {
+    config_dup="$1"
+}
+
+set_cfc() {
+    config_cfc="$1"
+}
+
 get_build_opts() {
     declare -a opts
     [ -n "$jobs" ] && opts=("-j $jobs")
@@ -245,6 +288,7 @@ get_build_opts() {
 CMAKE_FILENAME="CMakeCache.txt"
 DEBUG_FILENAME=".sbs_debug"
 VERBOSE_FILENAME=".sbs_verbose"
+ASPIS_FILENAME=".sbs_aspis"
 BUILD_DEFAULT_DIRNAME="build"
 TTY_BLUE="\033[34m"
 TTY_BOLD="\033[1m"
@@ -261,6 +305,9 @@ found_ninja=false
 found_stflash=false
 config_debug=false
 config_verbose=false
+config_aspis=false
+config_dup="eddi"
+config_cfc="cfcss"
 jobs=
 
 print_banner
@@ -279,11 +326,14 @@ for arg in "$@"; do
         --configure)  set -- "$@" "-u";;
         --debug)        set -- "$@" "-d";;
         --verbose)      set -- "$@" "-v";;
+        --aspis)        set -- "$@" "-a";;
+        --dup)          set -- "$@" "-p";;
+        --cfc)          set -- "$@" "-k";;
         *)              set -- "$@" "$arg"
     esac
 done
 
-while getopts b:cdef:hj:lnrt:uv opt; do
+while getopts ab:cdef:hj:k:lnp:rt:uv opt; do
     case "$opt" in
         h) usage; exit 0;;
         j) set_jobs "$OPTARG";;
@@ -295,6 +345,9 @@ while getopts b:cdef:hj:lnrt:uv opt; do
         u) find_deps && configure "$build_dir"; exit;;
         d) set_debug;;
         v) set_verbose;;
+        a) set_aspis;;
+        p) set_dup "$OPTARG";;
+        k) set_cfc "$OPTARG";;
         ?) usage; exit 2;;
     esac
 done
