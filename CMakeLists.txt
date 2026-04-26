@@ -32,7 +32,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/miosix/cmake")
 project(Main C CXX ASM)
 
 # Set here your board of choice
-set(MIOSIX_OPT_BOARD NOT_SET CACHE STRING "stm32f407vg_stm32f4discovery")
+set(MIOSIX_OPT_BOARD stm32f407vg_stm32f4discovery CACHE STRING "Target board")
 
 add_subdirectory(miosix EXCLUDE_FROM_ALL)
 include(LinkTarget)
@@ -53,7 +53,15 @@ option(MIOSIX_ENABLE_ASPIS "Build an ASPIS-hardened variant of the main target" 
 set(MIOSIX_ASPIS_DUP "eddi"  CACHE STRING "ASPIS data-protection pass (eddi|reddi|seddi|fdsc|no-dup)")
 set(MIOSIX_ASPIS_CFC "cfcss" CACHE STRING "ASPIS control-flow-checking pass (cfcss|rasm|inter-rasm|no-cfc)")
 
+# Add extra resources to compile any kernel source file with ASPIS
+# Define COMPILING_MIOSIX to allow conditional compilation in the source files.
 if(MIOSIX_ENABLE_ASPIS)
     include(ASPIS)
-    miosix_aspis_target(main "--${MIOSIX_ASPIS_DUP}" "--${MIOSIX_ASPIS_CFC}")
+    miosix_aspis_target(main "--${MIOSIX_ASPIS_DUP}" "--${MIOSIX_ASPIS_CFC}"
+        EXTRA_SOURCES
+            miosix/kernel/scheduler/priority/priority_scheduler.cpp
+            miosix/kernel/kernel.cpp
+        EXTRA_COMPILE_DEFS
+            COMPILING_MIOSIX
+    )
 endif()

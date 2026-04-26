@@ -62,11 +62,15 @@ function(miosix_aspis_target TARGET)
     # -------------------------------------------------------------------------
     # Parse optional arguments
     # -------------------------------------------------------------------------
+    # EXTRA_SOURCES: additional C/C++ source files to include in the ASPIS IR
+    # pipeline alongside the target's own sources. Their hardened object will
+    # override the GCC-compiled versions inside miosix.a at link time.
+    cmake_parse_arguments(ASPIS_ARGS "" "" "EXTRA_SOURCES;EXTRA_COMPILE_DEFS" ${ARGN})
+
     set(ASPIS_DUP  "eddi")
     set(ASPIS_CFC  "cfcss")
 
-    # Keep the interface small: only the supported ASPIS switches are accepted here.
-    foreach(OPT ${ARGN})
+    foreach(OPT ${ASPIS_ARGS_UNPARSED_ARGUMENTS})
         if(OPT STREQUAL "--eddi")
             set(ASPIS_DUP "eddi")
         elseif(OPT STREQUAL "--reddi")
@@ -168,6 +172,11 @@ function(miosix_aspis_target TARGET)
     list(FILTER IR_FLAGS EXCLUDE REGEX "^-nostdlib$")          # linker flag
     list(REMOVE_DUPLICATES IR_FLAGS)
 
+    # Append any caller-supplied extra defines (e.g. COMPILING_MIOSIX for kernel files)
+    foreach(DEF ${ASPIS_ARGS_EXTRA_COMPILE_DEFS})
+        list(APPEND IR_FLAGS "-D${DEF}")
+    endforeach()
+
     # Architecture-only flags for clang backend (IR → object)
     set(ARCH_FLAGS)
     foreach(FLAG ${IR_FLAGS})
@@ -198,7 +207,7 @@ function(miosix_aspis_target TARGET)
     # Step 1 — Emit LLVM IR for each C/C++ source file
     # -------------------------------------------------------------------------
     set(LL_FILES)
-    foreach(SRC ${TARGET_SOURCES})
+    foreach(SRC ${TARGET_SOURCES} ${ASPIS_ARGS_EXTRA_SOURCES})
         if(NOT IS_ABSOLUTE "${SRC}")
             set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SRC}")
         endif()
@@ -450,6 +459,11 @@ function(miosix_aspis_target TARGET)
     add_executable(${TARGET}_aspis "${ASPIS_OBJ}")
     set_target_properties(${TARGET}_aspis PROPERTIES LINKER_LANGUAGE CXX)
     miosix_link_target(${TARGET}_aspis PUBLIC)
+    # Suppress enum-size mismatch warnings: miosix libraries are compiled with
+    # GCC (variable-size enums) while the ASPIS object is compiled with Clang
+    # (fixed 32-bit enums). The warning is harmless for embedded code that does
+    # not pass enum values across this boundary at runtime.
+    target_link_options(${TARGET}_aspis PUBLIC -Wl,--no-enum-size-warning)
 
     message(STATUS "ASPIS target '${TARGET}_aspis' configured (dup=${ASPIS_DUP}, cfc=${ASPIS_CFC})")
 
