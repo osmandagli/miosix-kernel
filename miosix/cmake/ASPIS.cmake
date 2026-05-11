@@ -177,6 +177,10 @@ function(miosix_aspis_target TARGET)
         list(APPEND IR_FLAGS "-D${DEF}")
     endforeach()
 
+    # C-safe flags: strip C++-only flags (-std=c++*) so .c files compile cleanly
+    set(C_IR_FLAGS ${IR_FLAGS})
+    list(FILTER C_IR_FLAGS EXCLUDE REGEX "^-std=c\\+\\+")
+
     # Architecture-only flags for clang backend (IR → object)
     set(ARCH_FLAGS)
     foreach(FLAG ${IR_FLAGS})
@@ -217,11 +221,13 @@ function(miosix_aspis_target TARGET)
 
         if(SRC_EXT MATCHES "\\.(cpp|cxx|cc|C)$")
             set(FE "${ASPIS_CLANGPP}")
+            set(SRC_IR_FLAGS ${IR_FLAGS})
         elseif(SRC_EXT MATCHES "\\.c$")
             set(FE "${ASPIS_CLANG}")
+            set(SRC_IR_FLAGS ${C_IR_FLAGS})
         else()
             # Skip assembly and other non-C/C++ files
-            continue()  
+            continue()
         endif()
 
         set(LL_OUT "${ASPIS_BUILD}/${SRC_STEM}.ll")
@@ -231,7 +237,7 @@ function(miosix_aspis_target TARGET)
             COMMAND ${CMAKE_COMMAND} -E make_directory "${ASPIS_BUILD}"
             COMMAND "${FE}"
                     --target=arm-none-eabi
-                    ${IR_FLAGS}
+                    ${SRC_IR_FLAGS}
                     ${INC_FLAGS}
                     -S -emit-llvm -O0
                     -Xclang -disable-O0-optnone
@@ -410,27 +416,27 @@ function(miosix_aspis_target TARGET)
     # -------------------------------------------------------------------------
     # Step 7 — Duplicate globals (finalise global variable duplication)
     # -------------------------------------------------------------------------
-    set(FINAL_LL "${ASPIS_BUILD}/aspis_final.ll")
-    if(NOT ASPIS_DUP STREQUAL "none")
-        add_custom_command(
-            OUTPUT  "${FINAL_LL}"
-            COMMAND "${ASPIS_OPT}"
-                    -load-pass-plugin=${ASPIS_PASSES_DIR}/libEDDI.so
-                    --passes=duplicate-globals -S
-                    "${CFC_LL}" -o "${FINAL_LL}"
-            DEPENDS "${CFC_LL}"
-            COMMENT "ASPIS[${TARGET}]: Duplicating globals"
-            VERBATIM
-        )
-    else()
-        add_custom_command(
-            OUTPUT  "${FINAL_LL}"
-            COMMAND ${CMAKE_COMMAND} -E copy "${CFC_LL}" "${FINAL_LL}"
-            DEPENDS "${CFC_LL}"
-            COMMENT "ASPIS[${TARGET}]: Skipping global duplication (--no-dup)"
-            VERBATIM
-        )
-    endif()
+    #set(FINAL_LL "${ASPIS_BUILD}/aspis_final.ll")
+    #if(NOT ASPIS_DUP STREQUAL "none")
+    #    add_custom_command(
+    #        OUTPUT  "${FINAL_LL}"
+    #        COMMAND "${ASPIS_OPT}"
+    #                -load-pass-plugin=${ASPIS_PASSES_DIR}/libEDDI.so
+    #                --passes=duplicate-globals -S
+    #                "${CFC_LL}" -o "${FINAL_LL}"
+    #        DEPENDS "${CFC_LL}"
+    #        COMMENT "ASPIS[${TARGET}]: Duplicating globals"
+    #        VERBATIM
+    #    )
+    #else()
+    #    add_custom_command(
+    #        OUTPUT  "${FINAL_LL}"
+    #        COMMAND ${CMAKE_COMMAND} -E copy "${CFC_LL}" "${FINAL_LL}"
+    #        DEPENDS "${CFC_LL}"
+    #        COMMENT "ASPIS[${TARGET}]: Skipping global duplication (--no-dup)"
+    #        VERBATIM
+    #    )
+    #endif()
 
     # -------------------------------------------------------------------------
     # Step 8 — Compile hardened IR back to an ARM Cortex-M object file
@@ -441,9 +447,10 @@ function(miosix_aspis_target TARGET)
         COMMAND "${ASPIS_CLANGPP}"
                 --target=arm-none-eabi
                 ${ARCH_FLAGS}
-                -c "${FINAL_LL}"
+                -ffunction-sections
+                -c "${CFC_LL}"
                 -o "${ASPIS_OBJ}"
-        DEPENDS "${FINAL_LL}"
+        DEPENDS "${CFC_LL}"
         COMMENT "ASPIS[${TARGET}]: Compiling hardened IR to ARM object"
         VERBATIM
     )
