@@ -64,6 +64,7 @@ public:
      * Note: this member function is called also before the kernel is started
      * to add the main and idle thread.
      */
+    __attribute__((annotate("to_harden")))
     static bool PKaddThread(Thread *thread, Priority priority)
     {
         bool res=T::PKaddThread(thread,priority);
@@ -82,6 +83,7 @@ public:
      *
      * Can be called both with the kernel paused and with interrupts disabled.
      */
+    __attribute__((annotate("to_harden")))
     static bool PKexists(Thread *thread)
     {
         return T::PKexists(thread);
@@ -92,6 +94,7 @@ public:
      * Called when there is at least one dead thread to be removed from the
      * scheduler
      */
+    __attribute__((annotate("to_harden")))
     static void PKremoveDeadThreads()
     {
         #ifdef WITH_CPU_TIME_COUNTER
@@ -108,6 +111,7 @@ public:
      * \param newPriority new thread priority.
      * Priority must be a positive value.
      */
+    __attribute__((annotate("to_harden")))
     static void PKsetPriority(Thread *thread, Priority newPriority)
     {
         T::PKsetPriority(thread,newPriority);
@@ -121,6 +125,7 @@ public:
      * \param thread thread whose priority needs to be queried.
      * \return the priority of thread.
      */
+    __attribute__((annotate("to_harden")))
     static Priority getPriority(Thread *thread)
     {
         return T::getPriority(thread);
@@ -132,6 +137,7 @@ public:
      * thread is the idle thread, to be run all the times where no other thread
      * can run.
      */
+    __attribute__((annotate("to_harden")))
     static void IRQsetIdleThread(Thread *idleThread)
     {
         #ifdef WITH_CPU_TIME_COUNTER
@@ -146,6 +152,7 @@ public:
      * its running status. For example when a thread become sleeping, waiting,
      * deleted or if it exits the sleeping or waiting status
      */
+    __attribute__((annotate("to_harden")))
     static void IRQwaitStatusHook(Thread *t)
     {
         T::IRQwaitStatusHook(t);
@@ -163,6 +170,7 @@ public:
      * It's behaviour is to modify the global variable miosix::cur which always
      * points to the currently running thread.
      */
+    __attribute__((annotate("to_harden")))
     static void IRQfindNextThread()
     {
         T::IRQfindNextThread();
@@ -173,6 +181,7 @@ public:
      * \return the next scheduled preemption set by the scheduler
      * In case no preemption is set returns numeric_limits<long long>::max()
      */
+    __attribute__((annotate("to_harden")))
     static long long IRQgetNextPreemption()
     {
         return T::IRQgetNextPreemption();

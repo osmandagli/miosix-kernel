@@ -55,13 +55,10 @@ set(MIOSIX_ASPIS_CFC "cfcss" CACHE STRING "ASPIS control-flow-checking pass (cfc
 
 if(MIOSIX_ENABLE_ASPIS)
     include(ASPIS)
-    # Pull the full source list from the miosix target so the ASPIS pipeline
-    # hardens the entire kernel without hardcoding board-specific file paths.
-    # Assembly files in the list are skipped automatically by miosix_aspis_target.
-    get_target_property(MIOSIX_KERNEL_SOURCES miosix SOURCES)
     miosix_aspis_target(main "--${MIOSIX_ASPIS_DUP}" "--${MIOSIX_ASPIS_CFC}"
         EXTRA_SOURCES
-            ${MIOSIX_KERNEL_SOURCES}
+            miosix/kernel/scheduler/priority/priority_scheduler.cpp
+            miosix/kernel/kernel.cpp
         EXTRA_COMPILE_DEFS
             COMPILING_MIOSIX
     )
